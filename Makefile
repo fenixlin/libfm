@@ -1,3 +1,4 @@
+include make.macro
 all:
 	cd src/libfm; make all
 

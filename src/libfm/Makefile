@@ -1,3 +1,4 @@
+include ../../make.macro
 BIN_DIR := ../../bin/
 
 OBJECTS := \
@@ -9,10 +10,10 @@ all: libFM transpose convert
 
 libFM: libfm.o
 	mkdir -p $(BIN_DIR)
-	g++ -O3 -Wall libfm.o -o $(BIN_DIR)libFM
+	${CXX} ${CXXFLAGS} -O3 -Wall libfm.o -o $(BIN_DIR)libFM
 
 %.o: %.cpp
-	g++ -O3 -Wall -c $< -o $@
+	${CXX} ${CXXFLAGS} -O3 -Wall -c $< -o $@
 
 clean:	clean_lib
 	mkdir -p $(BIN_DIR)
@@ -24,9 +25,9 @@ clean_lib:
 
 transpose: tools/transpose.o
 	mkdir -p $(BIN_DIR)
-	g++ -O3 tools/transpose.o -o $(BIN_DIR)transpose
+	${CXX} ${CXXFLAGS} -O3 tools/transpose.o -o $(BIN_DIR)transpose
 
 convert: tools/convert.o
 	mkdir -p $(BIN_DIR)
-	g++ -O3 tools/convert.o -o $(BIN_DIR)convert
+	${CXX} ${CXXFLAGS} -O3 tools/convert.o -o $(BIN_DIR)convert
 
