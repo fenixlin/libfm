@@ -46,12 +46,13 @@ class fm_learn {
 		double max_target;
 
 		int task; // 0=regression, 1=classification	
+        int save_frequency;
+        std::string save_filename;
 
 		const static int TASK_REGRESSION = 0;
 		const static int TASK_CLASSIFICATION = 1;
  
 		Data* validation;	
-
 
 		RLog* log;
 

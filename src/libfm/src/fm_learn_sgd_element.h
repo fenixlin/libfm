@@ -63,6 +63,10 @@ class fm_learn_sgd_element: public fm_learn_sgd {
 				iteration_time = (getusertime() - iteration_time);
 				double rmse_train = evaluate(train);
 				double rmse_test = evaluate(test);
+                if (save_frequency > 0 && i > 0 && i % save_frequency == 0) {
+                    std::cout << "Writing FM model..." << std::endl;
+                    fm->saveModel(save_filename);
+                }
 				std::cout << "#Iter=" << std::setw(3) << i << "\tTrain=" << rmse_train << "\tTest=" << rmse_test << std::endl;
 				if (log != NULL) {
 					log->log("rmse_train", rmse_train);

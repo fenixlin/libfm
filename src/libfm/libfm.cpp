@@ -100,6 +100,7 @@ int main(int argc, char **argv) {
 
 		const std::string param_save_model 	= cmdline.registerParameter("save_model", "filename for writing the FM model");
 		const std::string param_load_model 	= cmdline.registerParameter("load_model", "filename for reading the FM model");
+        const std::string param_save_frequency  = cmdline.registerParameter("save_frequency", "iteration number of how often should FM model be saved");
 
 		const std::string param_do_sampling	= "do_sampling";
 		const std::string param_do_multilevel	= "do_multilevel";
@@ -300,6 +301,21 @@ int main(int argc, char **argv) {
 		} else {
 			throw "unknown task";
 		}
+        if (cmdline.hasParameter(param_save_frequency)) {
+            if (! cmdline.hasParameter(param_save_model)) {
+                std::cout << "WARNING: Please specify saving filename with -save_model. Nothing will be saved." << std::endl;
+            } else if (! cmdline.getValue(param_method).compare("sgd") && ! cmdline.getValue(param_method).compare("als")){
+                std::cout << "WARNING: load/save enabled only for SGD and AL        S. Nothing will be saved." << std::endl;
+            } else {
+                int save_freq = cmdline.getValue(param_save_frequency, 0);
+                if (save_freq < 0 || save_freq > cmdline.getValue(param_num_iter, 100)) {
+                    std::cout << "WARNING: Improper value of save frequency. Nothing will be saved." << std::endl;
+                } else {
+                    fml->save_frequency = save_freq;
+                    fml->save_filename = cmdline.getValue(param_save_model);
+                }
+            }
+        }
 		
 		// (4) init the logging
 		RLog* rlog = NULL;	 

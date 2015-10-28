@@ -180,7 +180,7 @@ int fm_model::loadModel(std::string model_file_path) {
 			if(!std::getline(model_file,line)){return 0;}
 			std::vector<std::string> v_str;
 			splitString(line, ' ', v_str);			
-			if (v_str.size() != num_factor){return 0;}			
+			if (v_str.size() != (unsigned)num_factor){return 0;}			
 			for (int f = 0; f < num_factor; f++) {
 				v(f,i) = std::atof(v_str[f].c_str());
 			}
