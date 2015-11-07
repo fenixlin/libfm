@@ -76,12 +76,16 @@ class Data {
 		bool has_xt;
 		bool has_x;
 	public:	
-		Data(uint64 cache_size, bool has_x, bool has_xt) { 
+		Data(uint64 cache_size, bool has_x, bool has_xt, int pick_num, double pick_rate) { 
 			this->data_t = NULL;
 			this->data = NULL;
 			this->cache_size = cache_size;
 			this->has_x = has_x;
 			this->has_xt = has_xt;
+            this->pick_num = pick_num;
+            this->pick_rate = pick_rate;
+            if (pick_num<0) this->pick_rate = -1;
+            if (pick_rate<0) this->pick_num = -1;
 		}
 
 		LargeSparseMatrix<DATA_FLOAT>* data_t;
@@ -93,6 +97,9 @@ class Data {
  
 		DATA_FLOAT min_target;
 		DATA_FLOAT max_target;
+
+        int pick_num;
+        double pick_rate;
 
 		DVector<RelationJoin> relation;
 		
@@ -169,10 +176,6 @@ void Data::load(std::string filename) {
 		return;
 	}
 
-	this->data = new LargeSparseMatrixMemory<DATA_FLOAT>();
-	
-	DVector< sparse_row<DATA_FLOAT> >& data = ((LargeSparseMatrixMemory<DATA_FLOAT>*)this->data)->data;
-
 	int num_rows = 0;
 	uint64 num_values = 0;
 	num_feature = 0;
@@ -220,6 +223,10 @@ void Data::load(std::string filename) {
 		num_feature++; // number of feature is bigger (by one) than the largest value
 	}
 	std::cout << "num_rows=" << num_rows << "\tnum_values=" << num_values << "\tnum_features=" << num_feature << "\tmin_target=" << min_target << "\tmax_target=" << max_target << std::endl;
+
+    if (pick_num > num_rows) pick_num = num_rows;
+	this->data = new LargeSparseMatrixMemory<DATA_FLOAT>(pick_num, pick_rate);
+	DVector< sparse_row<DATA_FLOAT> >& data = ((LargeSparseMatrixMemory<DATA_FLOAT>*)this->data)->data;
 	data.setSize(num_rows);
 	target.setSize(num_rows);
 	
@@ -285,7 +292,7 @@ void Data::create_data_t() {
 	// for creating transpose data, the data has to be memory-data because we use random access
 	DVector< sparse_row<DATA_FLOAT> >& data = ((LargeSparseMatrixMemory<DATA_FLOAT>*)this->data)->data;
 
-	data_t = new LargeSparseMatrixMemory<DATA_FLOAT>();
+	data_t = new LargeSparseMatrixMemory<DATA_FLOAT>(pick_num, pick_rate);
 
 	DVector< sparse_row<DATA_FLOAT> >& data_t = ((LargeSparseMatrixMemory<DATA_FLOAT>*)this->data_t)->data;
 

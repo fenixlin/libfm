@@ -101,6 +101,8 @@ int main(int argc, char **argv) {
 		const std::string param_save_model 	= cmdline.registerParameter("save_model", "filename for writing the FM model");
 		const std::string param_load_model 	= cmdline.registerParameter("load_model", "filename for reading the FM model");
         const std::string param_save_frequency  = cmdline.registerParameter("save_frequency", "iteration number of how often should FM model be saved");
+		const std::string param_pick_rate = cmdline.registerParameter("pick_rate", "the rate with which the program pick special rows for update ");
+        const std::string param_pick_num  = cmdline.registerParameter("pick_num", "number of special rows at the top of the data file");
 
 		const std::string param_do_sampling	= "do_sampling";
 		const std::string param_do_multilevel	= "do_multilevel";
@@ -131,7 +133,9 @@ int main(int argc, char **argv) {
 		Data train(
 			cmdline.getValue(param_cache_size, 0),
 			! (!cmdline.getValue(param_method).compare("mcmc")), // no original data for mcmc
-			! (!cmdline.getValue(param_method).compare("sgd") || !cmdline.getValue(param_method).compare("sgda")) // no transpose data for sgd, sgda
+			! (!cmdline.getValue(param_method).compare("sgd") || !cmdline.getValue(param_method).compare("sgda")), // no transpose data for sgd, sgda
+            cmdline.getValue(param_pick_num, -1),
+            cmdline.getValue(param_pick_rate, -1.0) 
 		);
 		train.load(cmdline.getValue(param_train_file));
 		if (cmdline.getValue(param_verbosity, 0) > 0) { train.debug(); }
@@ -140,21 +144,23 @@ int main(int argc, char **argv) {
 		Data test(
 			cmdline.getValue(param_cache_size, 0),
 			! (!cmdline.getValue(param_method).compare("mcmc")), // no original data for mcmc
-			! (!cmdline.getValue(param_method).compare("sgd") || !cmdline.getValue(param_method).compare("sgda")) // no transpose data for sgd, sgda
+			! (!cmdline.getValue(param_method).compare("sgd") || !cmdline.getValue(param_method).compare("sgda")), // no transpose data for sgd, sgda
+            -1, -1
 		);
 		test.load(cmdline.getValue(param_test_file));
 		if (cmdline.getValue(param_verbosity, 0) > 0) { test.debug(); }
 
 		Data* validation = NULL;
 		if (cmdline.hasParameter(param_val_file)) {
-			if (cmdline.getValue(param_method).compare("sgda")) {
+			if (! cmdline.getValue(param_method).compare("sgda")) {
 				std::cout << "WARNING: Validation data is only used for SGDA. The data is ignored." << std::endl;
 			} else {
 				std::cout << "Loading validation set...\t" << std::endl;
 				validation = new Data(
 					cmdline.getValue(param_cache_size, 0),
 					! (!cmdline.getValue(param_method).compare("mcmc")), // no original data for mcmc
-					! (!cmdline.getValue(param_method).compare("sgd") || !cmdline.getValue(param_method).compare("sgda")) // no transpose data for sgd, sgda
+					! (!cmdline.getValue(param_method).compare("sgd") || !cmdline.getValue(param_method).compare("sgda")), // no transpose data for sgd, sgda
+                    -1, -1
 				);
 				validation->load(cmdline.getValue(param_val_file));
 				if (cmdline.getValue(param_verbosity, 0) > 0) { validation->debug(); }
@@ -244,20 +250,19 @@ int main(int argc, char **argv) {
 				fm.num_factor = dim[2];					
 			}			
 			fm.init();		
-			
 		}
 		
 		// (2.1) load the FM model
 		if (cmdline.hasParameter(param_load_model)) {
 			std::cout << "Reading FM model... \t" << std::endl;
-			if (cmdline.getValue(param_method).compare("sgd") || cmdline.getValue(param_method).compare("als")){ //load/save enabled only for SGD and ALS
-				if(!fm.loadModel(cmdline.getValue(param_load_model))){
-					std::cout << "WARNING: malformed model file. Nothing will be loaded." << std::endl;
-					fm.init();
-				}
+			if (!cmdline.getValue(param_method).compare("sgd") || !cmdline.getValue(param_method).compare("mcmc")){ //load/save enabled only for SGD and ALS
+                if(!fm.loadModel(cmdline.getValue(param_load_model))){
+                    std::cout << "WARNING: malformed model file. Nothing will be loaded." << std::endl;
+                    fm.init();
+                }
 			}
 			else{
-				std::cout << "WARNING: load/save enabled only for SGD and ALS. Nothing will be loaded." << std::endl;
+				std::cout << "WARNING: load/save enabled only for SGD, MCMC and ALS. Nothing will be loaded." << std::endl;
 			}
 		}
 
@@ -304,9 +309,7 @@ int main(int argc, char **argv) {
         if (cmdline.hasParameter(param_save_frequency)) {
             if (! cmdline.hasParameter(param_save_model)) {
                 std::cout << "WARNING: Please specify saving filename with -save_model. Nothing will be saved." << std::endl;
-            } else if (! cmdline.getValue(param_method).compare("sgd") && ! cmdline.getValue(param_method).compare("als")){
-                std::cout << "WARNING: load/save enabled only for SGD and AL        S. Nothing will be saved." << std::endl;
-            } else {
+            } else if (! cmdline.getValue(param_method).compare("sgd") || ! cmdline.getValue(param_method).compare("mcmc")){
                 int save_freq = cmdline.getValue(param_save_frequency, 0);
                 if (save_freq < 0 || save_freq > cmdline.getValue(param_num_iter, 100)) {
                     std::cout << "WARNING: Improper value of save frequency. Nothing will be saved." << std::endl;
@@ -314,6 +317,8 @@ int main(int argc, char **argv) {
                     fml->save_frequency = save_freq;
                     fml->save_filename = cmdline.getValue(param_save_model);
                 }
+            } else {
+                std::cout << "WARNING: load/save enabled only for SGD, MCMC and ALS. Nothing will be saved." << std::endl;
             }
         }
 		
@@ -440,11 +445,11 @@ int main(int argc, char **argv) {
 		// () save the FM model
 		if (cmdline.hasParameter(param_save_model)) {
 			std::cout << "Writing FM model... \t" << std::endl;
-			if (cmdline.getValue(param_method).compare("sgd") || cmdline.getValue(param_method).compare("als")){ //load/save enabled only for SGD and ALS
-				fm.saveModel(cmdline.getValue(param_save_model));
+			if (!cmdline.getValue(param_method).compare("sgd") || !cmdline.getValue(param_method).compare("mcmc")){ //load/save enabled only for SGD and ALS
+                fm.saveModel(cmdline.getValue(param_save_model));
 			}
 			else{
-				std::cout << "WARNING: load/save enabled only for SGD and ALS. Nothing will be saved." << std::endl;
+				std::cout << "WARNING: load/save enabled only for SGD, MCMC and ALS. Nothing will be saved." << std::endl;
 			}
 		}
 				 	

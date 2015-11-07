@@ -53,7 +53,7 @@ class fm_model {
 		
 		double init_stdev;
 		double init_mean;
-		
+
 		fm_model();
 		void debug();
 		void init();

@@ -231,19 +231,32 @@ template <typename T> class LargeSparseMatrixHD : public LargeSparseMatrix<T> {
 
 template <typename T> class LargeSparseMatrixMemory : public LargeSparseMatrix<T> {
 	protected:
-		 uint index;
+        uint index;
+        uint rindex;
+        uint random_pick() {
+            if (pick_rate<0) return index;
+            if (ran_uniform()<pick_rate) return static_cast<unsigned int>(ran_uniform()*pick_num);
+                else return static_cast<unsigned int>(ran_uniform()*(data.dim-pick_num)+pick_num);
+        }
 	public:
 		DVector< sparse_row<T> > data;
 		uint num_cols;
 		uint64 num_values;
-		virtual void begin() { index = 0; };
+		virtual void begin() { index = 0; rindex = random_pick(); };
 		virtual bool end() { return index >= data.dim; }
-		virtual void next() { index++;}
-		virtual sparse_row<T>& getRow() { return data(index); };
-		virtual uint getRowIndex() { return index; };
+		virtual void next() { index++; rindex = random_pick(); }
+		virtual sparse_row<T>& getRow() { return pick_rate>0? data(rindex): data(index); };
+		virtual uint getRowIndex() { return pick_rate>0? rindex: index; };
 		virtual uint getNumRows() { return data.dim; };
 		virtual uint getNumCols() { return num_cols; };
 		virtual uint64 getNumValues() { return num_values; };
+        int pick_num;
+        double pick_rate;
+        
+        LargeSparseMatrixMemory(int pick_num, double pick_rate) {
+            this->pick_num = pick_num;
+            this->pick_rate = pick_rate;
+        }
 
 //		void loadFromTextFile(std::string filename);
 };

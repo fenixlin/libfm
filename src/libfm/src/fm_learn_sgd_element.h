@@ -48,7 +48,6 @@ class fm_learn_sgd_element: public fm_learn_sgd {
 			
 				double iteration_time = getusertime();
 				for (train.data->begin(); !train.data->end(); train.data->next()) {
-					
 					double p = fm->predict(train.data->getRow(), sum, sum_sqr);
 					double mult = 0;
 					if (task == 0) {
